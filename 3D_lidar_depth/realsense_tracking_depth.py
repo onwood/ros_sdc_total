@@ -33,9 +33,12 @@ try:
     res = color.copy()
     hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
 
-    l_b = np.array([24, 133, 48])
-    u_b = np.array([39, 200, 181])
+    # l_b = np.array([24, 133, 48])
+    # u_b = np.array([39, 200, 181])
 
+    l_b = np.array([0, 0, 0])
+    u_b = np.array([255, 255, 255])
+    
     mask = cv2.inRange(hsv, l_b, u_b)
     color = cv2.bitwise_and(color, color, mask=mask)
 
