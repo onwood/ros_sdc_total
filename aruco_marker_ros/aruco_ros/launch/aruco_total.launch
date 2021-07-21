@@ -1,0 +1,70 @@
+<launch>
+
+    <arg name="markerId"        default="1"/>
+    <arg name="markerSize"      default="0.15"/>    <!-- in m -->
+    <arg name="eye"             default="left"/>
+    <arg name="marker_frame"    default="aruco_marker_frame"/>
+    <arg name="ref_frame"       default=""/>  <!-- leave empty and the pose will be published wrt param parent_name -->
+    <arg name="corner_refinement" default="LINES" /> <!-- NONE, HARRIS, LINES, SUBPIX -->
+
+    <arg name="video_device" default="/dev/video0" />
+    <arg name="image_width" default="640" />
+    <arg name="image_height" default="480" />
+
+    <arg name="port_name" default="/dev/ttyUSB0" />
+    <arg name="simulated_robot" default="false" />
+
+    <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen">
+        <param name="video_device" value="$(arg video_device)" />
+        <param name="image_width" value="$(arg image_width)" />
+        <param name="image_height" value="$(arg image_height)"/>
+        <param name="pixel_format" value="yuyv" />
+        <param name="camera_frame_id" value="usb_cam" />
+        <param name="io_method" value="mmap"/>
+        <!-- <remap from="/usb_cam/image_raw" to="/image_in"/>  -->
+    </node>
+
+    <node pkg="aruco_ros" type="single" name="aruco_single">
+        <remap from="/camera_info" to="/usb_cam/camera_info" />
+        <remap from="/image" to="/usb_cam/image_raw" />
+        <param name="image_is_rectified" value="True"/>
+        <param name="marker_size"        value="$(arg markerSize)"/>
+        <param name="marker_id"          value="$(arg markerId)"/>
+        <param name="reference_frame"    value="$(arg ref_frame)"/>   <!-- frame in which the marker pose will be refered -->
+        <param name="camera_frame"       value="base_link"/>
+        <param name="marker_frame"       value="$(arg marker_frame)" />
+        <param name="corner_refinement"  value="$(arg corner_refinement)" />
+        <remap from="aruco_single" to="/image_in"/> 
+        <remap from="aruco_single/result" to="/image_out"/>
+        <!-- <remap from="image_out" to="/image_out"/> -->
+    </node>
+
+	<!-- <node pkg="marker_pose" type="save_marker" name="save_marker" output="screen" />-->
+	<!-- <node pkg="turtlesim" type="turtlesim_node" name="turtlesim_node" /> -->
+	
+    <!-- <node pkg="marker_pose" type="go_stop" name="go_stop" output="screen" />
+    
+    <node name="scout_base_node" pkg="scout_base" type="scout_base_node" output="screen">
+        <param name="port_name" type="string" value="$(arg port_name)" />
+        <param name="simulated_robot" type="bool" value="$(arg simulated_robot)" />
+    </node> -->
+    <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" />
+        <node pkg="tensorflow_object_detector"
+                type="tensorflow_object_detector"
+                name="tensorflow_object_detector"
+                output="screen"
+                launch-prefix=""> <!-- use "gdb \-\-args" for debugging with gdb -->
+            <param name="graph_path" value="$(find tensorflow_object_detector)/config/ssd_mobilenet_v1_coco.pb"/> 
+            <param name="labels_path" value="$(find tensorflow_object_detector)/config/mscoco_labels.txt"/>
+            <param name="score_threshold" value="0.3"/> 
+            <param name="always_output_image" value="true"/> 
+        
+            <remap from="image_in" to="/usb_cam/image_raw"/>
+            <remap from="image_out" to="/image_out"/>
+        </node>
+
+        <node pkg="image_view" type="image_view" name="viewer">
+            <remap from="image" to="/image_out"/>
+        </node>
+</launch>
+
